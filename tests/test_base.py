@@ -12,22 +12,22 @@ Request = collections.namedtuple("Request", ["method", "path", "params", "data"]
 
 
 class HTTPClient:
-    def __init__(self, host=None, port=None, scheme=None, verify=True, cert=None):
+    def __init__(self, host=None, port=None, scheme=None, verify=True, cert=None, **kwargs):
         pass
 
-    def get(self, callback, path, params=None):  # pylint: disable=unused-argument
+    def get(self, callback, path, params=None, **kwargs):  # pylint: disable=unused-argument
         return Request("get", path, params, None)
 
-    def put(self, callback, path, params=None, data=""):  # pylint: disable=unused-argument
+    def put(self, callback, path, params=None, data="", **kwargs):  # pylint: disable=unused-argument
         return Request("put", path, params, data)
 
-    def delete(self, callback, path, params=None):  # pylint: disable=unused-argument
+    def delete(self, callback, path, params=None, **kwargs):  # pylint: disable=unused-argument
         return Request("delete", path, params, None)
 
 
 class Consul(consul.base.Consul):
-    def http_connect(self, host, port, scheme, verify=True, cert=None):
-        return HTTPClient(host, port, scheme, verify=verify, cert=None)
+    def http_connect(self, host, port, scheme, verify=True, cert=None, **kwargs):
+        return HTTPClient(host, port, scheme, verify=verify, cert=None, **kwargs)
 
 
 def _should_support(c):

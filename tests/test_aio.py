@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import struct
+from unittest.mock import patch
 
 import pytest
 
@@ -204,6 +205,44 @@ class TestAsyncioConsul:
 
         with pytest.raises(consul.ACLPermissionDenied):
             await c.acl.list(token=token)
+
+        destroyed = await c.acl.destroy(token)
+        assert destroyed is True
+
+    async def test_acl_token_header(self, consul_acl_obj):
+        c = consul_acl_obj
+
+        rules = """
+            key "" {
+                policy = "read"
+            }
+            key "private/" {
+                policy = "deny"
+            }
+        """
+
+        token = await c.acl.create(rules=rules)
+
+        # Wrap the underlying session.request method
+        with patch.object(
+            c.http._session, "request", wraps=c.http._session.request  # pylint: disable=protected-access
+        ) as mock_request:
+            with pytest.raises(consul.ACLPermissionDenied):
+                await c.acl.list(token=token)
+
+            # Ensure the mocked method was called
+            assert mock_request.called
+
+            # Extract the called arguments
+            called_uri = mock_request.call_args.args[1]
+
+            # Assert token is not in the URL
+            assert f"token={token}" not in called_uri
+
+            # Assert the X-Consul-Token header is present
+            called_headers = mock_request.call_args.kwargs["headers"]
+            assert "X-Consul-Token" in called_headers
+            assert called_headers["X-Consul-Token"] == token
 
         destroyed = await c.acl.destroy(token)
         assert destroyed is True

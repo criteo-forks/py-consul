@@ -14,26 +14,34 @@ class HTTPClient(base.HTTPClient):
         response.encoding = "utf-8"
         return base.Response(response.status_code, response.headers, response.text)
 
-    def get(self, callback, path, params=None):
+    def get(self, callback, path, params=None, **kwargs):
         uri = self.uri(path, params)
-        return callback(self.response(self.session.get(uri, verify=self.verify, cert=self.cert)))
+        header = self.build_header(**kwargs)
+        return callback(self.response(self.session.get(uri, verify=self.verify, cert=self.cert, headers=header)))
 
-    def put(self, callback, path, params=None, data=""):
+    def put(self, callback, path, params=None, data="", **kwargs):
         uri = self.uri(path, params)
-        return callback(self.response(self.session.put(uri, data=data, verify=self.verify, cert=self.cert)))
+        header = self.build_header(**kwargs)
+        return callback(
+            self.response(self.session.put(uri, data=data, verify=self.verify, cert=self.cert, headers=header))
+        )
 
-    def delete(self, callback, path, params=None):
+    def delete(self, callback, path, params=None, **kwargs):
         uri = self.uri(path, params)
-        return callback(self.response(self.session.delete(uri, verify=self.verify, cert=self.cert)))
+        header = self.build_header(**kwargs)
+        return callback(self.response(self.session.delete(uri, verify=self.verify, cert=self.cert, headers=header)))
 
-    def post(self, callback, path, params=None, data=""):
+    def post(self, callback, path, params=None, data="", **kwargs):
         uri = self.uri(path, params)
-        return callback(self.response(self.session.post(uri, data=data, verify=self.verify, cert=self.cert)))
+        header = self.build_header(**kwargs)
+        return callback(
+            self.response(self.session.post(uri, data=data, verify=self.verify, cert=self.cert, headers=header))
+        )
 
     def close(self):
         pass
 
 
 class Consul(base.Consul):
-    def http_connect(self, host, port, scheme, verify=True, cert=None):
-        return HTTPClient(host, port, scheme, verify, cert)
+    def http_connect(self, host, port, scheme, verify=True, cert=None, **kwargs):
+        return HTTPClient(host, port, scheme, verify, cert, **kwargs)

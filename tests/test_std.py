@@ -2,6 +2,7 @@ import base64
 import operator
 import struct
 import time
+from unittest.mock import patch
 
 import pytest
 
@@ -735,6 +736,23 @@ class TestConsul:
         acls = c.acl.list(token=master_token)
         assert {x["ID"] for x in acls} == {"anonymous", master_token}
 
+        with patch.object(c.http.session, "get", wraps=c.http.session.get) as mock_request:
+            acls = c.acl.list(token=master_token)
+
+            # Ensure the mocked method was called
+            assert mock_request.called
+
+            # Extract the called arguments
+            called_uri = mock_request.call_args.args[0]
+
+            # Assert token is not in the URL
+            assert f"token={master_token}" not in called_uri
+
+            # Assert the X-Consul-Token header is present
+            called_headers = mock_request.call_args.kwargs["headers"]
+            assert "X-Consul-Token" in called_headers
+            assert called_headers["X-Consul-Token"] == master_token
+
     def test_acl_implicit_token_use(self, acl_consul):
         # configure client to use the master token by default
         c = consul.Consul(port=acl_consul.port, token=acl_consul.token)
@@ -758,6 +776,23 @@ class TestConsul:
         """
         token = c.acl.create(rules=rules)
         assert c.acl.info(token)["Rules"] == rules
+
+        with patch.object(c.http.session, "get", wraps=c.http.session.get) as mock_request:
+            acls = c.acl.list(token=master_token)
+
+            # Ensure the mocked method was called
+            assert mock_request.called
+
+            # Extract the called arguments
+            called_uri = mock_request.call_args.args[0]
+
+            # Assert token is not in the URL
+            assert f"token={master_token}" not in called_uri
+
+            # Assert the X-Consul-Token header is present
+            called_headers = mock_request.call_args.kwargs["headers"]
+            assert "X-Consul-Token" in called_headers
+            assert called_headers["X-Consul-Token"] == master_token
 
         token2 = c.acl.clone(token)
         assert c.acl.info(token2)["Rules"] == rules
