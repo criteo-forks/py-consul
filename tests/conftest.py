@@ -147,3 +147,24 @@ def consul_obj(consul_port):
     consul_port, consul_version = consul_port
     c = Consul(port=consul_port)
     return c, consul_version
+
+
+@pytest.fixture(scope="session")
+def fresh_consul_admin():
+    # Wait for Consul to be up and running
+    url = "http://localhost:8500/v1/status/leader"
+    for _ in range(60):
+        try:
+            response = requests.get(url, timeout=2)
+            if response.ok:
+                break
+        except requests.exceptions.ConnectionError:
+            time.sleep(1)
+    else:
+        pytest.fail("Consul did not start within the expected time")
+
+    c = Consul(port=8500, token="e95b599e-166e-7d80-08ad-aee76e7ddf19")
+    yield c
+
+    # Cleanup all keys in the KV store
+    c.kv.delete("", recurse=True)
